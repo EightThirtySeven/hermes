@@ -3,7 +3,15 @@ asyncapi: "2.0.0"
 id: urn:dev:mruss:hermes
 info:
   title: Hermes
-  version: 0.69.0      
+  version: 0.69.0   
+  description: |
+    The Hermes protocol specifies the format of MQTT
+    messages for a voice assistant platform.
+
+    Adapted from [Snips.ai](https://docs.snips.ai/reference/hermes).
+
+    This documentation is currently an **incomplete** version of the 
+    Snips Hermes protocol.
 channels:
   "hermes/hotword/toggleOn":
     publish:
