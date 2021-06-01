@@ -1,0 +1,458 @@
+---
+asyncapi: "2.0.0"
+id: urn:dev:mruss:hermes
+info:
+  title: Hermes
+  version: 0.69.0      
+channels:
+  "hermes/hotword/toggleOn":
+    publish:
+      description: |
+        This will activate the Wake Word 
+        component of the Snips Platform.
+      message:
+        name: hotword-toggle-on
+        title: Hotword Toggle On
+        payload:
+          type: object
+          properties:
+            siteId:
+              type: string
+              description: |
+                The id of the site where the wake word 
+                detector should be turned on
+              example: default
+          required:
+            - siteId
+  "hermes/hotword/toggleOff":
+    publish:
+      description: |
+        This will deactivate the Wake Word component 
+        of the Snips Platform. Consequently, nothing 
+        will be triggered when a wake word is pronounced.
+      message:
+        name: hotword-toggle-off
+        title: Hotword Toggle Off
+        payload:
+          type: object
+          properties:
+            siteId:
+              type: string
+              description: |
+                The id of the site where the wake word 
+                detector should be turned off
+              example: default
+            sessionId:
+              type: string
+              description: |
+                The id of the session, if there is an 
+                active session
+          required:
+            - siteId
+          example:
+            siteId: default
+  "hermes/{wakewordId}/detected":
+    parameters:
+      wakewordId:
+        schema: 
+          type: string
+          description: |
+            Replace with the id of your 
+            wake word if multiple wake words are present, 
+            or `default` if there is only one wake word.
+    subscribe:
+      description: |
+        This message will be sent by the Snips Platform 
+        when the Wake Word component has detected that 
+        a specific wake word has been uttered.
+      message:
+        name: wake-word-detected
+        title: Wake Word Detected
+        payload:
+          type: object
+          properties:
+            siteId:
+              type: string
+              description: |
+                The id of the site where the wake word
+                was detected
+              example: default
+            modelId:
+              type: string
+              description: |
+                The id of the model that trigged the wake word
+              example:
+                pvporcupine
+            modelVersion:
+              type: string
+              description: The version of the model
+              example: 1
+            modelType:
+              type: string
+              description: |
+                The type of the model.
+              enum:
+                - universal
+                - personal
+              example: universal
+            currentSensitivity:
+              type: number
+              description: |
+                The sensitivity configured in the model 
+                at the time of the detection
+              example: 0.7
+  "hermes/asr/toggleOn":
+    publish:
+      description: |
+        This will activate the ASR component, subsequently 
+        enabling to start listening for voice 
+        (using the startListening call described below).
+      message:
+        name: asr-toggle-on
+        title: ASR Toggle On
+        payload:
+          type: object
+          example: {}
+  "hermes/asr/toggleOff":
+    publish:
+      description: |
+        This will deactivate the ASR component.
+      message:
+        name: asr-toggle-off
+        title: ASR Toggle Off
+        payload:
+          type: object
+          example: {}
+  "hermes/asr/startListening":
+    publish:
+      description: |
+        This will explicitly tell the ASR component 
+        to start listening for voice input.
+      message:
+        name: asr-start-listening
+        title: ASR Start Listening
+        payload:
+          type: object
+          properties:
+            siteId:
+              type: string    
+              description: |
+                The id of the site where the ASR 
+                should start listening
+              example: default
+            sessionId:
+              type: string
+              description: |
+                The id of the session, if there is an 
+                active session
+          required:
+            - siteId
+  "hermes/asr/stopListening":
+    publish:
+      description: |
+        This will explicitly tell the ASR component 
+        to stop listening for voice input.
+      message:
+        name: asr-stop-listening
+        title: ASR Stop Listening
+        payload:
+          type: object
+          properties:
+            siteId:
+              type: string    
+              description: |
+                The id of the site where the ASR 
+                should stop listening
+              example: default
+            sessionId:
+              type: string
+              description: |
+                The id of the session, if there is an 
+                active session
+          required:
+            - siteId
+  "hermes/asr/textCaptured":
+    subscribe:
+      description: |
+        When the ASR is listening, it transcribes voice 
+        to text in real time. This process stops when a 
+        longer period of silence is detected, after 
+        which the transcription results are posted, as 
+        described here.
+      message:
+        name: asr-text-captured
+        title: ASR Text Captured
+        payload:
+          type: object
+          properties:
+            text:
+              type: string
+              description: The text captured
+              example: turn on the lights
+            likelihood:
+              type: number
+              description: The likelihood of the capture
+              example: 0.85
+            seconds:
+              type: number
+              description: The time it took to do the processing
+              example: 2.1
+            siteId:
+              type: string
+              description: The id of the site where the text was captured
+              example: default
+            sessionId:
+              type: string
+              description: The id of the session, if there is an active session
+          required:
+            - text
+            - likelihood
+            - seconds
+            - siteId
+  "hermes/nlu/query":
+    publish:
+      description: |
+        In order to extract an intent and slots 
+        from a piece of text, send it directly to 
+        the NLU component as follows. The NLU 
+        component will subsequently publish a message 
+        to the `hermes/nlu/intentParsed` topic, 
+        described below.
+      message:
+        name: nlu-query
+        title: NLU Query
+        payload:
+          type: object
+          properties:
+            input:
+              type: string
+              description: |
+                The text to send to the NLU component
+              example: turn on the lights
+            intentFilter:
+              type: array
+              description: |
+                A list of intent names to restrict the 
+                NLU resolution on
+              items:
+                type: string
+              example:
+                - turnOnLights
+                - turnOffLights
+            id:
+              type: string
+              description: |
+                A request identifier. If provided, it will
+                be passed back in the response on 
+                `hermes/nlu/intentParsed` or 
+                `hermes/nlu/intentNotRecognized`
+            sessionId:
+              type: string
+              description: |
+                The id of the session, if there is an 
+                active session
+          required:
+            - input
+  "hermes/nlu/intentNotRecognized":
+    subscribe:
+      description: |
+        When the NLU was unable to parse a chunk of text, 
+        it publishes a message telling so.
+      message:
+        name: nlu-not-recognized
+        title: NLU Intent Not Recognized
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              description: |
+                Request identifier for the request passed 
+                from `hermes/nlu/query`
+            input:
+              type: string
+              description: |
+                The input that was processed, but didn't 
+                match any intent
+              example: show me the weather
+            sessionId:
+              type: string
+              description: |
+                The id of the session, if there is an 
+                active session
+          required:
+            - input
+  "hermes/nlu/error":
+    subscribe:
+      description: |
+        When an error has occurred in the NLU component, 
+        it publishes a message telling so.
+      message:
+        name: nlu-error
+        title: NLU Error
+        payload:
+          type: object
+          properties:
+            sessionId:
+              type: string
+              description: |
+                The id of the session, if there is an 
+                active session
+            error:
+              type: string
+              description: |
+                A description of the error that occurred
+            context:
+              type: string
+              description: |
+                Additional information on the context 
+                in which the error occurred
+          required:
+            - error
+  "hermes/audioServer/{siteId}/playBytes/{requestId}":
+    parameters:
+      siteId:
+        schema:
+          type: string
+          example: default
+          description: |
+            The site on which to play the sound
+      requestId:
+        schema:
+          type: string
+        description: |
+          An id to be passed back on 
+          `hermes/audioServer/{siteId}/playFinished`
+    publish:
+      description: |
+        You may send a WAV sound to be played on a 
+        specific site as follows.
+      message:
+        name: audio-play
+        title: Play Audio Bytes
+        payload:
+          description: |
+            The WAV file to play.
+  "hermes/audioServer/{siteId}/playFinished":
+    parameters:
+      siteId:
+        schema:
+          type: string
+          description: The site on which the sound was played
+    subscribe:
+      description: |
+        When the audio service has finished playing a 
+        sound, it publishes a message as follows.
+      message:
+        name: audio-play-finished
+        title: Audio Play Finished
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              description: |
+                Request identifier for the request
+            sessionId:
+              type: string
+              description: |
+                The id of the session, if there is
+                an active one
+          required:
+            - id
+  "hermes/audioServer/{siteId}/playBytesStreaming/{requestId}/{chunkNumber}/{isLastChunk}":
+    parameters:
+      siteId:
+        schema:
+          type: string
+          description: |
+            The site on which to play the sound
+      requestId:
+        schema:
+          type: string
+          description: |
+            The id to be passed back to
+            `hermes/audioServer/{siteId}/streamFinished`
+      chunkNumber:
+        schema:
+          type: number
+          description: |
+            Number of the send chunk, starting at 0
+      isLastChunk:
+        schema:
+          type: number
+          description: |
+            0, except for last chunk, where it is 1
+    publish:
+      description: |
+        You can also stream the sound you want to play 
+        instead of sending it all on one go. This is for 
+        example used by the TTS service to start playing 
+        the generated voice before the end of its generation.
+      message:
+        name: audio-stream-chunk
+        title: Audio Stream Chunk
+        payload:
+          description: |
+            The chunk, encoded as WAV
+  "hermes/audioServer/{siteId}/streamFinished":
+    parameters:
+      siteId:
+        schema:
+          type: string
+        description: |
+          The site on which the stream was played
+    publish:
+      description: |
+        When the audio service has finished streaming a sound, 
+        it publishes a message as follows.
+      message:
+        name: audio-stream-finished
+        title: Audio Stream Finished
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              description: |
+                The id of the stream that finished
+            siteId:
+              type: string
+              description: |
+                The id of the site on which the audio
+                was streamed
+          required:
+            - id
+            - siteId
+  "hermes/audioServer/{siteId}/audioFrame":
+    parameters:
+      siteId:
+        schema:
+          type: string
+          description: |
+            The site on which the sound frame was captured
+    publish:
+      description: |
+        Every time the platform captures an audio frame, 
+        it publishes a message as follows.
+      message:
+        name: audio-frame
+        title: Audio Frame
+        payload:
+          description: The WAV of the frame.
+
+
+
+
+    
+
+
+
+
+
+
+
+  
+
+        
+            
