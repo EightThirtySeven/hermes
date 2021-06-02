@@ -12,6 +12,52 @@ info:
 
     This documentation is currently an **incomplete** version of the 
     Snips Hermes protocol.
+components:
+  schemas:
+    detectedSlot:
+      type: object
+      properties:
+        confidence:
+          type: number
+          example: 0.859
+          description: |
+            Confidence of the slot, between 0 and 1, 1 being confident
+        raw_value:
+          type: string
+          description: |
+            The raw value of the slot, as it was in the input
+          example: living room
+        value:
+          type: string
+          description: |
+            The resolved value of the slot
+          example: Living Room
+        entity:
+          type: string
+          description: |
+            The entity of the slot
+          example: room
+        slotName:
+          type: string
+          description: |
+            The name of the slot
+          example: location
+        range:
+          type: object
+          description: |
+            The range where the slot can be found in the input. 
+            The object contains 2 integer fields: start representing 
+            the beginning of the range (inclusive) and end representing 
+            the end (exclusive).
+          example:
+            start: 14
+            end: 25
+      required:
+        - confidence
+        - raw_value
+        - value
+        - entity
+        - slotName
 channels:
   "hermes/hotword/toggleOn":
     publish:
@@ -437,8 +483,8 @@ channels:
       siteId:
         schema:
           type: string
-          description: |
-            The site on which the sound frame was captured
+        description: |
+          The site on which the sound frame was captured
     publish:
       description: |
         Every time the platform captures an audio frame, 
@@ -448,19 +494,469 @@ channels:
         title: Audio Frame
         payload:
           description: The WAV of the frame.
-
-
-
-
-    
-
-
-
-
-
-
-
-  
-
+  "hermes/intent/{intentName}":
+    parameters:
+      intentName:
+        schema:
+          type: string
+        description: |
+          The name of the detected intent
+    subscribe:
+      description: |
+        This is the main message the handler code should subscribe to. 
+        It is sent by the Dialogue Manager when an intent has been detected.
         
-            
+        Note that it is the handler's responsibility to inform the Dialogue 
+        Manager of what it should do with the current session by sending 
+        either a Continue Session or an End Session with the current `sessionId`.
+      message:
+        name: intent-detected
+        title: Intent Detected
+        payload:
+          type: object
+          properties:
+            sessionId:
+              type: string
+              description: |
+                Session of the intent detection. The client code must use it 
+                to continue or end the session.
+            customData:
+              type: string
+              description: |
+                Custom data provided in the Start Session or a Continue Session.
+            siteId:
+              type: string
+              description: |
+                Site where the user interaction took place.
+              example: default
+            input:  
+              type: string
+              description: |
+                The user input that has generated this intent.
+              example: turn on the lights
+            intent:
+              type: object
+              properties:
+                intentName:
+                  type: string
+                  description: |
+                    The name of the detected intent
+                  example: lights.on
+                confidenceScore:  
+                  type: number
+                  description: |
+                    The probability of the detection, between 0 and 1, 
+                    1 being sure.
+                  example: 0.999
+              required:
+                - intentName
+                - confidenceScore
+            slots:
+              type: array
+              description: |
+                Structured description of the detected slots for this 
+                intent if any, see Slot below.
+              items:
+                $ref: "#/components/schemas/detectedSlot"
+            asrTokens:
+              type: array
+              description: |
+                Structured  description of the tokens the ASR captured on 
+                for this intent. The first level of arrays represents each 
+                invocation of the ASR, the second one are the tokens captured, 
+                see ASR Token below. Note that this is not mapped on Android 
+                and iOS yet.
+              items:
+                type: object
+                properties:
+                  value:
+                    type: string
+                    description: |
+                      The value of the token
+                  confidence:
+                    type: number
+                    description: |
+                      Confidence of the token, between 0 and 1, 1 being the confident
+                  rangeStart:
+                    type: number
+                    description: |
+                      The start range in which the token is in the original input
+                    example: 10
+                  rangeEnd:
+                    type: number
+                    description: |
+                      The end range in which the token is in the original input
+                    example: 15
+                  time:
+                    type: object
+                    description: |
+                      Time when this token was detected. The object contains 
+                      2 Number fields: `start` representing the start time 
+                      and `end` representing the end time
+                    properties:
+                      start:
+                        type: number
+                        example: 2.53
+                      end:
+                        type: number
+                        example: 2.77
+                    required:
+                      - start
+                      - end
+                required:
+                  - value
+                  - confidence
+                  - rangeStart
+                  - rangeEnd
+                  - time
+            asrConfidence:
+              type: number
+              description: |
+                ASR confidence score between 0 and 1, 1 being sure.
+              example: 0.876
+            alternatives:
+              type: array
+              description: |
+                Structured description of alternatives intent resolution 
+                see Intent Alternatives below
+              items:
+                type: object
+                properties:
+                  intentName:
+                    type: string
+                    description: |
+                      The name of the alternative intent
+                  confidenceScore:
+                    type: number
+                    description: |
+                      Confidence of the alternative
+                    example: 0.65
+                  slots:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/detectedSlot"
+                    description: |
+                      Structured description of the detected slots for 
+                      this alternative intent if any.
+          required:
+            - sessionId
+            - siteId
+            - input
+            - intent
+  "hermes/dialogueManager/startSession":
+    publish:
+      description: |
+        You can send this message to programmatically initiate a new session. 
+        The Dialogue Manager will start the session by asking the TTS to say 
+        the text (if any) and wait for the answer of the end user.
+      message:
+        name: start-session
+        title: Start Session
+        payload:
+          type: object
+          properties:
+            siteId:
+              type: string
+              example: default
+              description: |
+                Site where to start the session
+            init:
+              oneOf:
+                - type: object
+                  description: |
+                    Action session intialization description
+                  properties:
+                    type:
+                      type: string
+                      const: action
+                    text:
+                      type: string
+                      description: |
+                        Text that the TTS should say at the beginning 
+                        of the session.
+                      example: Hello
+                    canBeEnqueued:
+                      type: boolean
+                      description: |
+                        If true, the session will start when there is no 
+                        pending one on this `siteId`, if false, the session 
+                        is just dropped if there is running one.
+                      example: false
+                    intentFilter:
+                      type: array
+                      description: |
+                        A list of intents names to restrict the NLU 
+                        resolution on the first query.
+                      items:
+                        type: string
+                      example:
+                        - lights.on
+                        - lights.off
+                    sendIntentNotRecognized:
+                      type: boolean
+                      example: true
+                      description: |
+                        ndicates whether the dialogue manager should handle 
+                        non recognized intents by itself or sent them as an 
+                        Intent Not Recognized for the client to handle. This 
+                        setting applies only to the next conversation turn. 
+                        The default value is false (and the dialogue manager 
+                        will handle non recognized intents by itself)
+                  required:
+                    - type
+                    - canBeEnqueued
+                - type: object
+                  description: |
+                    Notification session intialization description
+                  properties:
+                    type:
+                      type: string
+                      const: "notification"
+                    text:
+                      type: string
+                      description: |
+                        Text the TTS should say
+                      example: Hello
+                  required:
+                    - type
+                    - text
+            customData:
+              type: string
+              description: |
+                Additional information that can be provided by the handler. 
+                Each message related to the new session - sent by the Dialogue 
+                Manager - will contain this data
+          required:
+            - init
+  "hermes/dialogueManager/sessionQueued":
+    subscribe:
+      description: |
+        This message is sent by the Dialogue Manager when it receives a Start Session 
+        message and the corresponding site is busy. Only Start Session messages with a 
+        notification initialisation or an action initialisation with the canBeEnqueued 
+        flag set to true can be enqueued. When the site is free again, this session 
+        will be started.
+      message:
+        name: session-queued
+        title: Session Queued
+        payload:
+          type: object
+          properties:
+            sessionId:
+              type: string
+              description: |
+                Session identifier that was enqueued
+            siteId:
+              type: string
+              example: default
+              description: |
+                Site where the user interaction will take place
+            customData:
+              type: string
+              description: |
+                Custom data provided in the Start Session.
+          required:
+            - sessionId
+            - siteId
+  "hermes/dialogueManager/sessionStarted":
+    subscribe:
+      description: |
+        This message is sent by the Dialogue Manager when a new session is 
+        started, either following a wakeword or programmatically.
+      message:
+        name: session-started
+        title: Session Started
+        payload:
+          type: object
+          properties:
+            sessionId:
+              type: string
+              description: |
+                Session identifier that was enqueued
+            siteId:
+              type: string
+              example: default
+              description: |
+                Site where the user interaction will take place
+            customData:
+              type: string
+              description: |
+                Custom data provided in the Start Session.
+          required:
+            - sessionId
+            - siteId
+  "hermes/dialogueManager/continueSession":
+    publish:
+      description: |
+        You should send this after receiving received an Intent when 
+        you want to continue the session for example to ask additional 
+        information to the end user. 
+        
+        Be sure to use the same sessionId as the one in the Intent message.
+      message:
+        name: continue-session
+        title: Continue Session
+        payload:
+          type: object
+          properties:
+            sessionId:
+              type: string
+              description: |
+                Identifier of the session to continue
+            text: 
+              type: string
+              description: |
+                The text the TTS should say to start this additional request 
+                of the session.
+              example: What light should I turn on?
+            intentFilter:
+              type: array
+              description: |
+                A list of intents names to restrict the NLU resolution on the 
+                answer of this query. If this contains unknown intent names, 
+                the NLU will post an error message and the session will be closed.
+              items:
+                type: string
+              example:
+                - lights.on
+                - lights.off
+            customData:
+              type: string
+              description: |
+                An update to the session's custom data. If not provided, the custom 
+                data will stay the same
+            sendIntentNotRecognized:
+              type: boolean
+              description: |
+                Indicates whether the dialogue manager should handle non recognized 
+                intents by itself or sent them as an Intent Not Recognized for the 
+                client to handle. This setting applies only to the next conversation 
+                turn. The default value is false (and the dialogue manager will handle 
+                non recognized intents by itself)
+            slot:
+              type: string
+              description: |
+                requires intentFilter to contain a single value - If set, the dialogue 
+                engine will not run the the intent classification on the user response 
+                and go straight to slot filling, assuming the intent is the one passed 
+                in the intentFilter, and searching the value of the given slot
+          required:
+            - sessionId
+            - text
+  "hermes/dialogueManager/sessionEnded":
+    subscribe:
+      description: |
+        This message is sent by the Dialogue Manager when a session is ended.
+      message:
+        name: session-ended
+        title: Session Ended
+        payload:
+          type: object
+          properties:
+            sessionId:
+              type: string
+              description: |
+                Session identifier of the ended session
+            customData:
+              type: string
+              description: |
+                Custom data provided in the Start Session or a Continue Session.
+            siteId:
+              type: string
+              description: |
+                Site where the user interaction took place.
+              example: default      
+            termination:
+              type: object
+              description: |
+                Structured description of why the session has been ended
+              properties:
+                reason:
+                  type: string
+                  enum:
+                    - nominal
+                    - abortedByUser
+                    - intentNotRecognized
+                    - timeout
+                    - error
+              required:
+                - reason
+          required:
+            - sessionId
+            - siteId
+            - termination
+  "hermes/dialogueManager/intentNotRecognized":
+    subscribe:
+      description: |  
+        This message is sent by the dialogue manager when it failed to 
+        recognize and intent AND you requested the dialogue manager to 
+        notify you of such events using the `sendIntentNotRecognized` flag 
+        in the last Start Session or Continue Session
+      message:
+        name: intent-not-recognized
+        title: Intent Not Recognized
+        payload:
+          type: object
+          properties:
+            sessionId:
+              type: string
+              description: |
+                Session identifier of the session that generated this 
+                intent not recognized event.  
+            customData:
+              type: string
+              description: |
+                Custom data provided in the Start Session or a Continue Session.
+            siteId:
+              type: string
+              description: |
+                Site where the user interaction took place.
+            input:
+              type: string
+              description: |
+                The input, if any that generated this event.
+              example: open the pod bay doors
+          required:
+            - sessionId
+            - siteId
+  "hermes/dialogueManager/configure":
+    publish:
+      description: |
+        You can send this message to programmatically configure the scope of intents 
+        that are enabled at a given time. By default, all intents are enabled by 
+        default unless specified otherwise in the console. Refers to the dedicated 
+        Console tutorial for further details. The behaviour implemented by the 
+        intentFilter attributes for the start session and continue session locally 
+        overwrites the set of enabled/disabled intents only for the next user turn.
+      message:
+        name: configure
+        title: Configure
+        payload:
+          type: object
+          properties:
+            siteId:
+              type: string
+              description: |
+                Site where to start the session
+            intents:
+              type: array
+              items:
+                type: object
+                properties:
+                  intentId:
+                    type: string
+                    description: |
+                      Intent name to configure
+                  enable:
+                    type: boolean
+                    description: |
+                      If true, the intent will be enabled which means that the Intent 
+                      message for the related intent_name is enabled and will be 
+                      triggered if the intent is detected.
+                required:
+                  - intentId
+                  - enable
+          required:
+            - siteId
+            - intents
+
