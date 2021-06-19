@@ -1,9 +1,9 @@
 ---
-asyncapi: "2.0.0"
+asyncapi: 2.0.0
 id: urn:dev:mruss:hermes
 info:
   title: Hermes
-  version: 0.69.0   
+  version: 0.69.0
   description: |
     The Hermes protocol specifies the format of MQTT
     messages for a voice assistant platform.
@@ -59,7 +59,7 @@ components:
         - entity
         - slotName
 channels:
-  "hermes/hotword/toggleOn":
+  hermes/hotword/toggleOn:
     publish:
       description: |
         This will activate the Wake Word 
@@ -78,7 +78,7 @@ channels:
               example: default
           required:
             - siteId
-  "hermes/hotword/toggleOff":
+  hermes/hotword/toggleOff:
     publish:
       description: |
         This will deactivate the Wake Word component 
@@ -105,10 +105,10 @@ channels:
             - siteId
           example:
             siteId: default
-  "hermes/{wakewordId}/detected":
+  hermes/hotword/{wakewordId}/detected:
     parameters:
       wakewordId:
-        schema: 
+        schema:
           type: string
           description: |
             Replace with the id of your 
@@ -135,8 +135,7 @@ channels:
               type: string
               description: |
                 The id of the model that trigged the wake word
-              example:
-                pvporcupine
+              example: pvporcupine
             modelVersion:
               type: string
               description: The version of the model
@@ -155,7 +154,7 @@ channels:
                 The sensitivity configured in the model 
                 at the time of the detection
               example: 0.7
-  "hermes/asr/toggleOn":
+  hermes/asr/toggleOn:
     publish:
       description: |
         This will activate the ASR component, subsequently 
@@ -167,7 +166,7 @@ channels:
         payload:
           type: object
           example: {}
-  "hermes/asr/toggleOff":
+  hermes/asr/toggleOff:
     publish:
       description: |
         This will deactivate the ASR component.
@@ -177,7 +176,7 @@ channels:
         payload:
           type: object
           example: {}
-  "hermes/asr/startListening":
+  hermes/asr/startListening:
     publish:
       description: |
         This will explicitly tell the ASR component 
@@ -189,7 +188,7 @@ channels:
           type: object
           properties:
             siteId:
-              type: string    
+              type: string
               description: |
                 The id of the site where the ASR 
                 should start listening
@@ -201,7 +200,7 @@ channels:
                 active session
           required:
             - siteId
-  "hermes/asr/stopListening":
+  hermes/asr/stopListening:
     publish:
       description: |
         This will explicitly tell the ASR component 
@@ -213,7 +212,7 @@ channels:
           type: object
           properties:
             siteId:
-              type: string    
+              type: string
               description: |
                 The id of the site where the ASR 
                 should stop listening
@@ -225,7 +224,7 @@ channels:
                 active session
           required:
             - siteId
-  "hermes/asr/textCaptured":
+  hermes/asr/textCaptured:
     subscribe:
       description: |
         When the ASR is listening, it transcribes voice 
@@ -263,7 +262,7 @@ channels:
             - likelihood
             - seconds
             - siteId
-  "hermes/nlu/query":
+  hermes/nlu/query:
     publish:
       description: |
         In order to extract an intent and slots 
@@ -307,7 +306,7 @@ channels:
                 active session
           required:
             - input
-  "hermes/nlu/intentNotRecognized":
+  hermes/nlu/intentNotRecognized:
     subscribe:
       description: |
         When the NLU was unable to parse a chunk of text, 
@@ -336,7 +335,7 @@ channels:
                 active session
           required:
             - input
-  "hermes/nlu/error":
+  hermes/nlu/error:
     subscribe:
       description: |
         When an error has occurred in the NLU component, 
@@ -363,7 +362,7 @@ channels:
                 in which the error occurred
           required:
             - error
-  "hermes/audioServer/{siteId}/playBytes/{requestId}":
+  hermes/audioServer/{siteId}/playBytes/{requestId}:
     parameters:
       siteId:
         schema:
@@ -387,7 +386,7 @@ channels:
         payload:
           description: |
             The WAV file to play.
-  "hermes/audioServer/{siteId}/playFinished":
+  hermes/audioServer/{siteId}/playFinished:
     parameters:
       siteId:
         schema:
@@ -414,7 +413,7 @@ channels:
                 an active one
           required:
             - id
-  "hermes/audioServer/{siteId}/playBytesStreaming/{requestId}/{chunkNumber}/{isLastChunk}":
+  hermes/audioServer/{siteId}/playBytesStreaming/{requestId}/{chunkNumber}/{isLastChunk}:
     parameters:
       siteId:
         schema:
@@ -449,7 +448,7 @@ channels:
         payload:
           description: |
             The chunk, encoded as WAV
-  "hermes/audioServer/{siteId}/streamFinished":
+  hermes/audioServer/{siteId}/streamFinished:
     parameters:
       siteId:
         schema:
@@ -478,7 +477,7 @@ channels:
           required:
             - id
             - siteId
-  "hermes/audioServer/{siteId}/audioFrame":
+  hermes/audioServer/{siteId}/audioFrame:
     parameters:
       siteId:
         schema:
@@ -494,7 +493,7 @@ channels:
         title: Audio Frame
         payload:
           description: The WAV of the frame.
-  "hermes/intent/{intentName}":
+  hermes/intent/{intentName}:
     parameters:
       intentName:
         schema:
@@ -505,7 +504,7 @@ channels:
       description: |
         This is the main message the handler code should subscribe to. 
         It is sent by the Dialogue Manager when an intent has been detected.
-        
+
         Note that it is the handler's responsibility to inform the Dialogue 
         Manager of what it should do with the current session by sending 
         either a Continue Session or an End Session with the current `sessionId`.
@@ -529,7 +528,7 @@ channels:
               description: |
                 Site where the user interaction took place.
               example: default
-            input:  
+            input:
               type: string
               description: |
                 The user input that has generated this intent.
@@ -542,7 +541,7 @@ channels:
                   description: |
                     The name of the detected intent
                   example: lights.on
-                confidenceScore:  
+                confidenceScore:
                   type: number
                   description: |
                     The probability of the detection, between 0 and 1, 
@@ -557,7 +556,7 @@ channels:
                 Structured description of the detected slots for this 
                 intent if any, see Slot below.
               items:
-                $ref: "#/components/schemas/detectedSlot"
+                $ref: '#/components/schemas/detectedSlot'
             asrTokens:
               type: array
               description: |
@@ -634,7 +633,7 @@ channels:
                   slots:
                     type: array
                     items:
-                      $ref: "#/components/schemas/detectedSlot"
+                      $ref: '#/components/schemas/detectedSlot'
                     description: |
                       Structured description of the detected slots for 
                       this alternative intent if any.
@@ -643,7 +642,7 @@ channels:
             - siteId
             - input
             - intent
-  "hermes/dialogueManager/startSession":
+  hermes/dialogueManager/startSession:
     publish:
       description: |
         You can send this message to programmatically initiate a new session. 
@@ -711,7 +710,7 @@ channels:
                   properties:
                     type:
                       type: string
-                      const: "notification"
+                      const: notification
                     text:
                       type: string
                       description: |
@@ -728,7 +727,7 @@ channels:
                 Manager - will contain this data
           required:
             - init
-  "hermes/dialogueManager/sessionQueued":
+  hermes/dialogueManager/sessionQueued:
     subscribe:
       description: |
         This message is sent by the Dialogue Manager when it receives a Start Session 
@@ -758,7 +757,7 @@ channels:
           required:
             - sessionId
             - siteId
-  "hermes/dialogueManager/sessionStarted":
+  hermes/dialogueManager/sessionStarted:
     subscribe:
       description: |
         This message is sent by the Dialogue Manager when a new session is 
@@ -785,13 +784,13 @@ channels:
           required:
             - sessionId
             - siteId
-  "hermes/dialogueManager/continueSession":
+  hermes/dialogueManager/continueSession:
     publish:
       description: |
         You should send this after receiving received an Intent when 
         you want to continue the session for example to ask additional 
         information to the end user. 
-        
+
         Be sure to use the same sessionId as the one in the Intent message.
       message:
         name: continue-session
@@ -803,7 +802,7 @@ channels:
               type: string
               description: |
                 Identifier of the session to continue
-            text: 
+            text:
               type: string
               description: |
                 The text the TTS should say to start this additional request 
@@ -843,7 +842,7 @@ channels:
           required:
             - sessionId
             - text
-  "hermes/dialogueManager/sessionEnded":
+  hermes/dialogueManager/sessionEnded:
     subscribe:
       description: |
         This message is sent by the Dialogue Manager when a session is ended.
@@ -865,7 +864,7 @@ channels:
               type: string
               description: |
                 Site where the user interaction took place.
-              example: default      
+              example: default
             termination:
               type: object
               description: |
@@ -885,9 +884,9 @@ channels:
             - sessionId
             - siteId
             - termination
-  "hermes/dialogueManager/intentNotRecognized":
+  hermes/dialogueManager/intentNotRecognized:
     subscribe:
-      description: |  
+      description: |
         This message is sent by the dialogue manager when it failed to 
         recognize and intent AND you requested the dialogue manager to 
         notify you of such events using the `sendIntentNotRecognized` flag 
@@ -919,7 +918,7 @@ channels:
           required:
             - sessionId
             - siteId
-  "hermes/dialogueManager/configure":
+  hermes/dialogueManager/configure:
     publish:
       description: |
         You can send this message to programmatically configure the scope of intents 
@@ -959,4 +958,3 @@ channels:
           required:
             - siteId
             - intents
-
