@@ -1,17 +1,22 @@
 ---
 asyncapi: 2.0.0
-id: urn:dev:mruss:hermes
+id: urn:dev:mruss:eightthirtyseven
 info:
-  title: Hermes
-  version: 0.69.0
+  title: EightThirtySeven
+  version: 0.1.0
   description: |
-    The Hermes protocol specifies the format of MQTT
-    messages for a voice assistant platform.
-
-    Adapted from [Snips.ai](https://docs.snips.ai/reference/hermes).
-
-    This documentation is currently an **incomplete** version of the 
-    Snips Hermes protocol.
+    EightThirtySeven platform protocol.
+    Based on the [Hermes protocol](https://docs.snips.ai/reference/hermes) from Snips,
+    with additions and omissions to tailor to EightThirtySeven.
+servers:
+  local:
+    url: localhost
+    protocol: mqtt
+    description: A local broker
+  docker:
+    url: broker
+    protocol: mqtt
+    description: A broker available in Docker Compose
 components:
   schemas:
     intent:
@@ -37,7 +42,7 @@ components:
         Structured description of the detected slots for this 
         intent if any, see Slot below.
       items:
-        $ref: '#/components/schemas/detectedSlot'
+        $ref: "#/components/schemas/detectedSlot"
     detectedSlot:
       type: object
       properties:
@@ -349,9 +354,9 @@ channels:
               description: The input that was processed
               example: turn on the lights
             intent:
-              $ref: '#/components/schemas/intent'
+              $ref: "#/components/schemas/intent"
             slots:
-              $ref: '#/components/schemas/slots'
+              $ref: "#/components/schemas/slots"
             sessionId:
               type: string
               description: The id of the session, if there is an active session
@@ -637,9 +642,9 @@ channels:
                 The user input that has generated this intent.
               example: turn on the lights
             intent:
-              $ref: '#/components/schemas/intent'
+              $ref: "#/components/schemas/intent"
             slots:
-              $ref: '#/components/schemas/slots'
+              $ref: "#/components/schemas/slots"
             asrTokens:
               type: array
               description: |
@@ -714,7 +719,7 @@ channels:
                       Confidence of the alternative
                     example: 0.65
                   slots:
-                    $ref: '#/components/schemas/slots'
+                    $ref: "#/components/schemas/slots"
                 required:
                   - intentName
                   - confidenceScore
@@ -1001,7 +1006,7 @@ channels:
               type: string
               description: |
                 Session identifier of the session that generated this 
-                intent not recognized event.  
+                intent not recognized event.
             customData:
               type: string
               description: |
@@ -1058,3 +1063,101 @@ channels:
           required:
             - siteId
             - intents
+  hermes/display/{siteId}/url:
+    parameters:
+      siteId:
+        description: The id of the site that should display this content
+        schema:
+          type: string
+          example: default
+    publish:
+      description: Publish a url to this topic to open it on the display.
+      message:
+        name: display-url
+        title: Display URL
+        payload:
+          type: object
+          properties:
+            url:
+              type: string
+              description: The url of the webpage to open
+              example: https://mruss.dev/
+          required:
+            - url
+  hermes/display/{siteId}/html:
+    parameters:
+      siteId:
+        description: The id of the site that should display this content
+        schema:
+          type: string
+          example: default
+    publish:
+      description: Publish an html page to this topic to show it on the display.
+      message:
+        name: display-html
+        title: Display HTML
+        payload:
+          type: object
+          properties:
+            html:
+              type: string
+              description: The HTML text content to be rendered
+              example: <html><head><title>My App</title></head><body><h1>Welcome!</h1><p>Here is the interactive page</p></body></html>
+          required:
+            - html
+  hermes/display/{siteId}/notification:
+    parameters:
+      siteId:
+        description: The id of the site that should display this notification
+        schema:
+          type: string
+          example: default
+    publish:
+      description: Publish an notification with HTML markup to this topic to show a transient notification
+      message:
+        name: display-notification
+        title: Display Notification
+        payload:
+          type: object
+          properties:
+            title:
+              type: string
+              description: The notification title
+              example: Thermostat
+            message:
+              type: string
+              description: The notification message
+              example: The temperature has dropped below 67 degrees
+            buttons:
+              type: object
+              description: Buttons to show on the notification
+              properties:
+                responseTopic:
+                  type: string
+                  description: The topic to publish button clicks to
+                  example: thermostat/handler
+                items:
+                  type: array
+                  description: The button information
+                  items:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        description: The button text
+                      value:
+                        type: string
+                        description: The value that will be sent when the button is clicked
+                    required:
+                      - text
+                      - value
+                  example:
+                    - text: Change Temperature Setting
+                      value: action.changeSetTemp
+                    - text: Active Heat
+                      value: action.activateHeat
+              required:
+                - eventTopic
+                - items
+          required:
+            - message
