@@ -14,6 +14,30 @@ info:
     Snips Hermes protocol.
 components:
   schemas:
+    intent:
+      type: object
+      properties:
+        intentName:
+          type: string
+          description: |
+            The name of the detected intent
+          example: lights.on
+        confidenceScore:
+          type: number
+          description: |
+            The probability of the detection, between 0 and 1, 
+            1 being sure.
+          example: 0.999
+      required:
+        - intentName
+        - confidenceScore
+    slots:
+      type: array
+      description: |
+        Structured description of the detected slots for this 
+        intent if any, see Slot below.
+      items:
+        $ref: '#/components/schemas/detectedSlot'
     detectedSlot:
       type: object
       properties:
@@ -306,13 +330,42 @@ channels:
                 active session
           required:
             - input
+  hermes/nlu/intentParsed:
+    subscribe:
+      description: |
+        When text has been sent to the NLU, the result of the 
+        intent resolution is sent back as follows.
+      message:
+        name: nlu-intent-parsed
+        title: NLU Intent Parsed
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Request identifier for the request passed from `hermes/nlu/query`
+            input:
+              type: string
+              description: The input that was processed
+              example: turn on the lights
+            intent:
+              $ref: '#/components/schemas/intent'
+            slots:
+              $ref: '#/components/schemas/slots'
+            sessionId:
+              type: string
+              description: The id of the session, if there is an active session
+          required:
+            - input
+            - intent
+
   hermes/nlu/intentNotRecognized:
     subscribe:
       description: |
         When the NLU was unable to parse a chunk of text, 
         it publishes a message telling so.
       message:
-        name: nlu-not-recognized
+        name: nlu-intent-not-recognized
         title: NLU Intent Not Recognized
         payload:
           type: object
@@ -405,7 +458,7 @@ channels:
             id:
               type: string
               description: |
-                Request identifier for the request
+                The request identifier for the request
             sessionId:
               type: string
               description: |
@@ -534,29 +587,9 @@ channels:
                 The user input that has generated this intent.
               example: turn on the lights
             intent:
-              type: object
-              properties:
-                intentName:
-                  type: string
-                  description: |
-                    The name of the detected intent
-                  example: lights.on
-                confidenceScore:
-                  type: number
-                  description: |
-                    The probability of the detection, between 0 and 1, 
-                    1 being sure.
-                  example: 0.999
-              required:
-                - intentName
-                - confidenceScore
+              $ref: '#/components/schemas/intent'
             slots:
-              type: array
-              description: |
-                Structured description of the detected slots for this 
-                intent if any, see Slot below.
-              items:
-                $ref: '#/components/schemas/detectedSlot'
+              $ref: '#/components/schemas/slots'
             asrTokens:
               type: array
               description: |
@@ -631,12 +664,10 @@ channels:
                       Confidence of the alternative
                     example: 0.65
                   slots:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/detectedSlot'
-                    description: |
-                      Structured description of the detected slots for 
-                      this alternative intent if any.
+                    $ref: '#/components/schemas/slots'
+                required:
+                  - intentName
+                  - confidenceScore
           required:
             - sessionId
             - siteId
@@ -842,6 +873,25 @@ channels:
           required:
             - sessionId
             - text
+  hermes/dialogueManager/endSession:
+    publish:
+      description: |
+        You should send this after receiving received an Intent when you want to end the session.
+        Be sure to use the same sessionId as the one in the Intent message.
+      message:
+        name: end-session
+        title: End Session
+        payload:
+          type: object
+          properties:
+            sessionId:
+              type: string
+              description: Identifier of the session to end
+            text:
+              type: string
+              description: The text the TTS should say to end the session
+          required:
+            - sessionId
   hermes/dialogueManager/sessionEnded:
     subscribe:
       description: |
