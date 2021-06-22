@@ -415,6 +415,56 @@ channels:
                 in which the error occurred
           required:
             - error
+  hermes/tts/say:
+    publish:
+      description: |
+        Sending text to be spoken by the TTS component (low-level API)
+      message:
+        name: tts-say
+        title: TTS Say
+        payload:
+          type: object
+          properties:
+            text:
+              type: string
+              description: The text to be spoken
+              example: I can't do that, Dave.
+            lang:
+              type: string
+              description: |
+                The [language code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes)
+                to use when saying the text. If nothing is provided, `en_GB` will be used.
+              example: en_US
+            id:
+              type: string
+              description: |
+                A request identifier. If provided it will be passed back in the response on `hermes/tts/sayFinished`
+            siteId:
+              type: string
+              description: The id of the site where the text should be spoken
+              example: default
+            sessionId:
+              type: string
+              description: The id of the session, if there is an active session
+          required:
+            - text
+            - siteId
+  hermes/tts/sayFinished:
+    subscribe:
+      description: |
+        When TTS has finished speaking some text, it will publish a message as follows (low-level API)
+      message:
+        name: tts-say-finished
+        title: TTS Say Finished
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Request identifier for the request, passed from `hermes/tts/say`
+            sessionId:
+              type: string
+              description: The id of the session, if there is an active session
   hermes/audioServer/{siteId}/playBytes/{requestId}:
     parameters:
       siteId:
